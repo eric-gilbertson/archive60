@@ -1,11 +1,9 @@
 ##!/usr/bin/python
 
-import datetime, subprocess, sys, getopt, os, shutil
+import math, datetime, subprocess, sys, getopt, os, shutil
 import glob
 
-NO_SILENCE = 0
-SOME_SILENCE = 1
-ALL_SILENCE = 2
+base_path = '/home/ericg/mybook_archive/main_backup/bu1'
 
 def parse_args(argv):
    global start_date, is_today
@@ -41,20 +39,23 @@ def execute_cmd(cmd):
 def check_for_silence(file):
     cmd = 'ffmpeg -i {}  -af silencedetect=n=-50dB:d=120.0 -f null -'.format(file)
     (output, err)  = execute_cmd(cmd)
-    silence_start = "silence_start:" in err
-    silence_end = "silence_end:" in err
-    ret = NO_SILENCE
-    if silence_start and silence_end:
-        ret = SOME_SILENCE
-    if silence_start and not silence_end:
-        ret = ALL_SILENCE
+    silence_start_idx = err.find('silence_start:')
+    silence_end_idx = err.find('silence_end:')
 
-    return ret
-
-
-corrupt_files_path='/home/ericg/mybook_archive/main_backup/bu1/corrupt_files'
-base_path = '/home/ericg/mybook_archive/main_backup/bu1'
-
+    if silence_start_idx >= 0:
+        if silence_end_idx == -1:
+            print(file + ': silent')
+            shutil.move(file, file + '.silent')
+        else:
+            silence_start_idx = silence_start_idx + len('silence_start: ')
+            silence_end_idx = silence_end_idx + len('silence_end:')
+            silence_start_end_idx = err.find('\\n', silence_start_idx,)
+            silence_end_end_idx = err.find('|', silence_end_idx)
+            silence_start = math.floor(float(err[silence_start_idx : silence_start_end_idx]))
+            silence_end = math.floor(float(err[silence_end_idx : silence_end_end_idx]))
+            suffix = '_{}-{}.partial'.format(silence_start, silence_end)
+            print(file + ': partial ' + suffix)
+            shutil.move(file, file + suffix)
 
 parse_args(sys.argv[1:])
 date_ar = start_date.split('-')
@@ -72,10 +73,6 @@ print('src: ' + src_path)
 
 files = glob.glob(src_path)
 for file in files:
-    silence_code = check_for_silence(file)
-    print("{}: {}".format(file, silence_code))
-
-    if silence_code == ALL_SILENCE:
-        shutil.move(file, file + '.silent')
+    check_for_silence(file)
 
 
