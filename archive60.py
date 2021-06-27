@@ -11,7 +11,7 @@
 #    - source files are incomplete, e.g. there are time gaps
 #    - segment start time offset drifts over time
 #
-import datetime, subprocess, sys, getopt, os, shut
+import datetime, subprocess, sys, getopt, os
 from calendar import monthrange
 
 from array import *
@@ -21,29 +21,29 @@ import urllib
 
 start_date = ''
 create_files = False
-#SRC_PATH = '/home/ericg/mybook_archive/main_backup/bu1'
-SRC_PATH = './archives'
+SRC_PATH = '/home/ericg/mybook_archive/main_backup/bu1'
+#SRC_PATH = './archives'
 DEST_PATH = './archive_files'
 
 SEG_LEN_MINS = 15
 SEG_LEN_SECS = SEG_LEN_MINS * 60
 
 def parse_args(argv):
-   global start_date, is_today
+   global start_date, is_today, create_files
 
    try:
-      opts, args = getopt.getopt(argv,"d:",["date"])
+      opts, args = getopt.getopt(argv,"d:c",["date","create_files"])
    except getopt.GetoptError:
-      print ('test.py -d YYYY-MM-DD')
+      print ('test.py -c -d YYYY-MM-DD')
       sys.exit(2)
 
    for opt, arg in opts:
       if opt == '-h':
-         print ('test.py -date YYYY-MM-DD')
+         print ('test.py -c -date YYYY-MM-DD')
          sys.exit()
       elif opt in ("-d", "--date"):
          start_date = arg
-      elif opt in ("-cf", "--create-files"):
+      elif opt in ("-c", "--create-files"):
          create_files = True
 
    print ('Show date: {}'.format(start_date))
@@ -83,8 +83,7 @@ def get_file_time(file_path):
     return time_int
 
 def get_file_datetime(file):
-    ar = file.split('_')
-    date_str = ar[2] + '_' + ar[3][0:4]
+    date_str = file[-17:-9] + '_' + file[-8:-4]
     date = datetime.datetime.strptime(date_str, '%Y%m%d_%H%M')
     return date
 
@@ -191,7 +190,7 @@ def create_audio_file(concat_files, time_offset_mins_int):
         time_offset = make2digit(time_offset_mins_int)
         time_offset_opt = ' -ss 00:{}:00 '.format(time_offset)
 
-    outdir = '{}/{}/{}/{}/'.format(DEST_PATH, year,  months[month], make2digit(day))
+    outdir = '{}/{}/{}/{}/'.format(DEST_PATH, year,  months[month-1], make2digit(day))
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
