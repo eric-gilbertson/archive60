@@ -58,7 +58,7 @@ def execute_cmd(cmd):
         p_status = p.wait()
         err = str(err)
         print("Returned +{}+, +{}+\n".format(output, str(err)))
-        sys.exit()
+        sys.exit() ########
     except Exception as ioe:
         print('Exception getting duration for: {}, {}'.format(cmd, ioe))
         sys.exit()
@@ -147,10 +147,13 @@ def check_audio_validity(concat_files, time_offset_mins):
     concat_len = len(concat_files)
     if concat_len < 4 or concat_len > 5:
         log_fatal('incorrect file count: ' + concat_files[0])
+    elif time_offset_mins < 0 or time_offset_mins > 14:
+        log_fatal('invalid time offset: ' + time_offset_mins)
 
     first_file = concat_files[0]
-    skip_time_mins = 60 - get_file_minutes(first_file)
-    if concat_len == 4 and time_offest != 0:
+    file_minutes = get_file_minutes(first_file)
+    skip_time_mins = 0 if file_minutes == 0 else 60 - file_minutes
+    if concat_len == 4 and time_offset_mins != 0:
         log_fatal('Invalid time offset for four count: ' + first_file)
     elif skip_time_mins != time_offset_mins:
         log_fatal('Time offset mismatch: ' + first_file)
@@ -226,10 +229,14 @@ def process_day(year, month, day):
             continue
 
         if concat_len == 0 or  are_consecutive_files(concat_files[len(concat_files)-1], file):
+            if concat_len == 0:
+                offset_mins = get_file_minutes(file)
+
             concat_files.append(file)
             concat_len = len(concat_files)
-            if len(concat_files) > 4 or len(concat_files) == 4 and offset_mins == 0:
-                skip_time = 60 - get_file_minutes(concat_files[0])
+            if concat_len > 4 or concat_len == 4 and offset_mins == 0:
+                file_minutes = get_file_minutes(concat_files[0])
+                skip_time = 0 if file_minutes == 0 else 60 - file_minutes
                 create_audio_file(concat_files, skip_time)
                 concat_files.clear()
                 if skip_time > 0:
