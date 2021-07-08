@@ -259,7 +259,10 @@ def process_day(year, month, day):
                 create_audio_file(concat_files, skip_time)
                 concat_files.clear()
                 if skip_time > 0:
-                    concat_files.append(file)
+                    if int(get_file_minutes(file)) % 15 == 0:
+                        print("skip concat file due to drift: " + file)
+                    else:
+                        concat_files.append(file)
         else:
             concat_files.clear()
             if is_valid_start_time(file):
