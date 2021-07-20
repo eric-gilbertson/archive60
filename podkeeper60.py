@@ -20,10 +20,10 @@ import urllib
 start_date = ''
 create_files = False
 
-#SRC_PATH = '/home/ericg/mybook_archive/main_backup/podkeeper'
-SRC_PATH = './podkeeper'
-#DEST_PATH = '/media/pr2100/kzsu-aircheck-archives'
-DEST_PATH = './archive_files'
+SRC_PATH = '/home/ericg/mybook_archive/main_backup/podkeeper'
+#SRC_PATH = './podkeeper'
+DEST_PATH = '/media/pr2100/kzsu-aircheck-archives'
+#DEST_PATH = './archive_files'
 
 SEG_LEN_MINS = 15
 SEG_LEN_SECS = SEG_LEN_MINS * 60
