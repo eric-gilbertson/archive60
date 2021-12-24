@@ -10,10 +10,11 @@ from calendar import monthrange
 start_date = ''
 create_files = False
 
-SRC_PATH = '/Users/Barbara/Downloads/markm_archive'
-#SRC_PATH = './archives'
-DEST_PATH = '/Users/Barbara/Downloads/markm_archive/archive_files/'
-#DEST_PATH = './archive_files'
+#SRC_PATH = '/Users/Barbara/Downloads/markm_archive'
+SRC_PATH = '/home/ericg/GoogleDrive/markm_archive'
+
+#DEST_PATH = '/Users/Barbara/Downloads/markm_archive/archive_files/'
+DEST_PATH = '/media/pr2100/kzsu-aircheck-archives'
 
 
 def log_it(msg):
@@ -86,6 +87,7 @@ def process_day(year, month, day):
 
     srcfile = tarfile.open(tarfile_path);
     members = srcfile.getmembers()
+    members_len = len(members)
     if len(members) < 8640:
         if not os.path.exists(tarfile_path):
             log_it("Incomplete tar file: " + tarfile_path)
@@ -156,7 +158,7 @@ def process_month(year, month):
 def process_year(year):
     log_it("Process year {}".format(year))
     for month in range(12):
-        log_it("process month: " + month+1)
+        log_it("process month: " + str(month+1))
         process_month(year, month+1)
 
 parse_args(sys.argv[1:])
