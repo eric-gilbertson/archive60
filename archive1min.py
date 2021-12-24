@@ -45,9 +45,30 @@ def make2digit(some_int):
 
     return res
 
+def make4digit(some_int):
+    res = str(some_int)
+    if some_int < 10:
+        res = '000' + res
+    elif some_int < 100:
+        res = '00' + res
+    elif some_int < 1000:
+        res = '0' + res
+
+    return res
+
 def log_fatal(msg):
     log_it(msg)
     sys.exit()
+
+def get_index(qlist, value):
+    idx = -1
+
+    try:
+        idx = qlist.index(value)
+    except ValueError:
+        return -1
+
+    return idx
 
 def process_day(year, month, day):
     months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -56,7 +77,9 @@ def process_day(year, month, day):
     END_HOUR = 23
 
     #log_it("Process day {}, {}, {}".format(year, make2digit(month), make2digit(day)))
-    tarfile_path = '{}/{}_{}_{}.tar'.format(SRC_PATH, year, make2digit(month), make2digit(day))
+    month2d = make2digit(month)
+    day2d = make2digit(day)
+    tarfile_path = '{}/{}_{}_{}.tar'.format(SRC_PATH, year, month2d, day2d)
     if not os.path.exists(tarfile_path):
         log_it("Tar file does not exist: " + tarfile_path)
         return
@@ -68,39 +91,58 @@ def process_day(year, month, day):
             log_it("Incomplete tar file: " + tarfile_path)
             return
 
-#    member_list = []
-#    dash_idx = members[0].name.rindex('-') + 1
-#    for member in members:
-#        print("file: {} - {}".format(member.name[dash_idx:-4], member.size))
-#        if member.size == FILE_SIZE_1MIN:
-#            member_list.append(int(member.name[dash_idx:-4]))
+    member_dict = {}
+    member_list = []
+    missing_list = []
+    dash_idx = members[1].name.rindex('-') + 1
+    for member in members:
+        #print("file: {} - {}".format(member.name[dash_idx:-4], member.size))
+        if member.size >= MIN_FILE_SIZE_1MIN:
+            id = int(member.name[dash_idx:-4])
+            member_dict[id] = member
+            member_list.append(id)
 
+    member_list.sort(key=lambda x: x)
+    src_path = members[0].name
 
     outdir = '{}/{}/{}/{}/'.format(DEST_PATH, year,  months[month-1], make2digit(day))
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
     for hour in range(START_HOUR, END_HOUR+1):
-        dest_path = '{}/kzsu-{}-{}-{}-{}00.mp3'.format(outdir, year, make2digit(month), make2digit(day), make2digit(hour))
+        hour2d = make2digit(hour)
+        start_min = hour * 100
+        end_min = start_min + 59
+        gotall = get_index(member_list, end_min) - get_index(member_list, start_min) == 59
+        if not gotall:
+            missing_list.append(str(hour))
+            continue
+
+        dest_path = '{}/kzsu-{}-{}-{}-{}00.mp3'.format(outdir, year, month2d, day2d, hour2d)
         if os.path.exists(dest_path):
             log_fatal("File exists: " + dest_path)
 
         total_size = 0
         dest = open(dest_path, 'wb') if create_files else None
 
-        for minute in range(hour*60, (hour+1)*60):
-            fsize = members[minute].size
-            if  fsize < MIN_FILE_SIZE_1MIN:
-                log_fatal('Incomplete minute: {}, {}, {}'.format(fsize, minute, tarfile_path))
+        for minute in range(start_min, end_min+1):
+            if  not minute in member_list:
+                log_fatal('Incomplete minute: {}, {}'.format(minute, tarfile_path))
 
-            buffer = srcfile.extractfile(members[minute])
-            total_size = total_size + fsize
+            path = '{}/{}-{}-{}-{}.mp3'.format(src_path, year, month2d, day2d, make4digit(minute))
+            member = member_dict[minute]
+            buffer = srcfile.extractfile(member)
+            total_size = total_size + member.size
             if not buffer:
                 log_fatal('Missing minute: {}, {}'.format(minute, tarfile_path))
             elif dest:
                 shutil.copyfileobj(buffer, dest, 100000)
 
-        print("File ceated: {}, {}".format(dest_path, total_size))
+        if len(missing_list) > 0:
+            log_it("Missing hours: {}".format(",".join(missing_list)))
+
+        log_it("File ceated: {}, {}".format(dest_path, total_size))
+
         if dest:
             dest.close()
 
